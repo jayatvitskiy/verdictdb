@@ -128,6 +128,9 @@ public abstract class Dbms {
             dbms = new DbmsPostgreSQL(vc, dbName, host, port, schema, user, password, jdbcClassName);
         } else if (dbName.equals("h2")) {
             dbms = new DbmsH2(vc, dbName, host, port, schema, user, password, jdbcClassName);
+        } else if(dbName.equals("mysql")) {
+            dbms = new DbmsMySQL(vc, dbName, host, port, schema, user, password, jdbcClassName);
+
         } else {
             String msg = String.format("Unsupported DBMS: %s", dbName);
             VerdictLogger.error("Dbms", msg);

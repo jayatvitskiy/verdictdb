@@ -31,6 +31,7 @@ import edu.umich.verdict.util.StringManipulations;
 
 public class DbmsMySQL extends DbmsJDBC 
 {
+	final int MAX_LENGTH=1000;
 
 	@Override
 	protected String randomPartitionColumn() {
@@ -59,8 +60,8 @@ public class DbmsMySQL extends DbmsJDBC
 		//not sure if MySQL supports % for mod, so I replaced it with mod()
 		//crc32 is supported in mySQL
 		//cannot cast to varchar or text. can only cast to char, and must specify array size!
-	    return String.format("mod(crc32(cast(%s%s%s as char(1000))),%d)", //1000 is an arbitrary max size. perhaps 2^16 is better
-	        getQuoteString(), col, getQuoteString(), mod);
+	    return String.format("mod(crc32(cast(%s%s%s as char(%d))),%d)", //1000 is an arbitrary max size. perhaps 2^16 is better
+	        getQuoteString(), col, getQuoteString(),MAX_LENGTH, mod);
 	}
    
 	@Override
@@ -68,8 +69,8 @@ public class DbmsMySQL extends DbmsJDBC
 	    String concatStr = "";
 	    for (int i = 0; i < columns.size(); ++i) {
 	        String col = columns.get(i);
-	        String castStr = String.format("cast(%s%s%s as char(1000)", 	//1000 is arbitrary
-	            getQuoteString(), col, getQuoteString());
+	        String castStr = String.format("cast(%s%s%s as char(%d)", 	//1000 is arbitrary
+	            getQuoteString(), col, getQuoteString(),MAX_LENGTH);
 	        if (i < columns.size() - 1) {
 	            castStr += ",";
 	        }
@@ -83,4 +84,55 @@ public class DbmsMySQL extends DbmsJDBC
 	protected String modOfRand(int mod) {
 	    return String.format("mod(abs(rand(unix_timestamp())),d)", mod);
 	}
+	
+	
+	//Override because this uses CAST AS STRING in DbmsJDBC.java
+	public long[] getGroupCount(TableUniqueName tableName, List<SortedSet<ColNameExpr>> columnSetList)
+            throws VerdictException {
+        if (columnSetList.isEmpty()) {
+            return null;
+        }
+        int setCount = 1;
+        long[] groupCounts = new long[columnSetList.size()];
+        List<String> countStringList = new ArrayList<>();
+        for (SortedSet<ColNameExpr> columnSet : columnSetList) {
+            List<String> colStringList = new ArrayList<>();
+            for (ColNameExpr col : columnSet) {
+                String colString = String.format("COALESCE(CAST(%s as CHAR(%d), '%s')",
+                        col.getCol(),MAX_LENGTH, NULL_STRING);
+                colStringList.add(colString);
+            }
+            String concatString = "";
+            for (int i = 0; i < colStringList.size(); ++i) {
+                concatString += colStringList.get(i);
+                if (i < colStringList.size() - 1) {
+                    concatString += ", ";
+                }
+            }
+            String countString = String.format("COUNT(DISTINCT(CONCAT_WS(',', %s))) as cnt%d",
+                    concatString, setCount++);
+            countStringList.add(countString);
+        }
+        String sql = "SELECT ";
+        for (int i = 0; i < countStringList.size(); ++i) {
+            sql += countStringList.get(i);
+            if (i < countStringList.size() - 1) {
+                sql += ", ";
+            }
+        }
+        sql += String.format(" FROM %s", tableName);
+
+        ResultSet rs;
+        try {
+            rs = executeJdbcQuery(sql);
+            while (rs.next()) {
+                for (int i = 0; i < groupCounts.length; ++i) {
+                    groupCounts[i] = rs.getLong(i+1);
+                }
+            }
+        } catch (SQLException e) {
+            throw new VerdictException(StackTraceReader.stackTrace2String(e));
+        }
+        return groupCounts;
+    }
 }
