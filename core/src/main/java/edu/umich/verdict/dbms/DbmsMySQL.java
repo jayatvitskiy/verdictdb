@@ -52,6 +52,11 @@ import org.apache.spark.sql.Row;
 public class DbmsMySQL extends DbmsJDBC 
 {
 	final int MAX_LENGTH=1000;
+	
+	public DbmsMySQL(VerdictContext vc, String dbName, String host, String port, String schema, String user,
+            String password, String jdbcClassName) throws VerdictException{
+			super(vc, dbName, host, port, schema, user, password, jdbcClassName);
+			}
 
 	@Override
 	protected String randomPartitionColumn() {
@@ -68,6 +73,13 @@ public class DbmsMySQL extends DbmsJDBC
 	            pcount, pcount, partitionColumnName());
 	}
    
+	/*@Override
+	public boolean tableNameIsCaseSensitive()
+    {
+    		return true;
+    }*/
+	
+	
 	@Override
 	protected String randomNumberExpression(SampleParam param) {
 		//This does not need to change for MySQL

@@ -20,6 +20,7 @@ import com.google.common.base.Optional;
 
 import edu.umich.verdict.VerdictContext;
 import edu.umich.verdict.util.StringManipulations;
+import edu.umich.verdict.dbms.Dbms;
 
 import java.io.Serializable;
 
@@ -45,7 +46,7 @@ public class TableUniqueName implements Serializable, Comparable<TableUniqueName
 
     public TableUniqueName(String schemaName, String tableName) {
         this.schemaName = (schemaName != null) ? schemaName.toLowerCase() : schemaName;
-        this.tableName = (tableName != null) ? tableName.toLowerCase() : tableName;
+        this.tableName = (tableName != null && !Dbms.isCaseSensitive()) ? tableName.toLowerCase() : tableName;
     }
 
     public static TableUniqueName uname(String schemaName, String tableName) {

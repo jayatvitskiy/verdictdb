@@ -44,6 +44,8 @@ import edu.umich.verdict.util.VerdictLogger;
  * This class is responsible for choosing a right DBMS class.
  */
 public abstract class Dbms {
+	
+	private static boolean isCaseSensitiveFlag = false;
 
     protected final String dbName;
 
@@ -58,6 +60,11 @@ public abstract class Dbms {
     protected static String randNumColname = "verdict_rand";
 
     protected static final String HASH_DELIM = ";";
+    
+    public static boolean isCaseSensitive()
+    {
+    		return isCaseSensitiveFlag;
+    }
 
     public VerdictContext getVc() {
         return vc;
@@ -114,6 +121,7 @@ public abstract class Dbms {
             String user, String password, String jdbcClassName) throws VerdictException {
 
         Dbms dbms = null;
+        isCaseSensitiveFlag = false;
 //        if (dbName.equals("mysql")) {
 //            dbms = new DbmsMySQL(vc, dbName, host, port, schema, user, password, jdbcClassName);
         if (dbName.equals("impala")) {
@@ -129,6 +137,7 @@ public abstract class Dbms {
         } else if (dbName.equals("h2")) {
             dbms = new DbmsH2(vc, dbName, host, port, schema, user, password, jdbcClassName);
         } else if(dbName.equals("mysql")) {
+        		isCaseSensitiveFlag = true;
             dbms = new DbmsMySQL(vc, dbName, host, port, schema, user, password, jdbcClassName);
 
         } else {
@@ -770,6 +779,11 @@ public abstract class Dbms {
     public String getQuoteString() {
         return "`";
     }
+    
+    /*public boolean tableNameIsCaseSensitive()
+    {
+    		return false;
+    }*/
 
     @Deprecated
     public String varianceFunction() {
