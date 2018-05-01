@@ -45,7 +45,7 @@ import edu.umich.verdict.util.VerdictLogger;
  */
 public abstract class Dbms {
 	
-	private static boolean isCaseSensitiveFlag = false;
+	private static boolean isCaseSensitiveFlag = false; //the default value may come into play!
 
     protected final String dbName;
 
@@ -121,7 +121,7 @@ public abstract class Dbms {
             String user, String password, String jdbcClassName) throws VerdictException {
 
         Dbms dbms = null;
-        isCaseSensitiveFlag = false;
+        //isCaseSensitiveFlag = false;	//This was causing a bad bug. Apparently dbName isn't mysql every time this is called!
 //        if (dbName.equals("mysql")) {
 //            dbms = new DbmsMySQL(vc, dbName, host, port, schema, user, password, jdbcClassName);
         if (dbName.equals("impala")) {
