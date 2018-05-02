@@ -51,7 +51,7 @@ import org.apache.spark.sql.Row;
 
 public class DbmsMySQL extends DbmsJDBC 
 {
-	final int MAX_LENGTH=1000;
+	final int MAX_LENGTH=255;
 	
 	public DbmsMySQL(VerdictContext vc, String dbName, String host, String port, String schema, String user,
             String password, String jdbcClassName) throws VerdictException{
@@ -166,5 +166,29 @@ public class DbmsMySQL extends DbmsJDBC
             throw new VerdictException(StackTraceReader.stackTrace2String(e));
         }
         return groupCounts;
+    }
+	
+	public void createMetaTablesInDBMS(TableUniqueName originalTableName, TableUniqueName sizeTableName,
+            TableUniqueName nameTableName) throws VerdictException {
+		VerdictLogger.debug(this, "Creates meta tables if not exist.");
+		String sql = String.format("CREATE TABLE IF NOT EXISTS %s (schemaname TEXT, tablename TEXT, samplesize BIGINT, originaltablesize BIGINT)", sizeTableName); 
+		executeUpdate(sql);
+		
+		sql = String.format("CREATE TABLE IF NOT EXISTS %s (originalschemaname TEXT, originaltablename TEXT, sampleschemaaname TEXT, sampletablename TEXT, sampletype TEXT, samplingratio DOUBLE, columnnames TEXT)", nameTableName); 
+		executeUpdate(sql);	//can't use string, must use text
+		
+		VerdictLogger.debug(this, "Meta tables created.");
+		vc.getMeta().refreshTables(sizeTableName.getDatabaseName());
+		}
+	
+	@Override
+    public void insertEntry(TableUniqueName tableName, List<Object> values) throws VerdictException {
+        StringBuilder sql = new StringBuilder(1000);
+        sql.append(String.format("insert into %s values ", tableName)); //slightly different syntax here
+        sql.append("(");
+        String with = "'";
+        sql.append(Joiner.on(", ").join(StringManipulations.quoteString(values, with)));
+        sql.append(")");
+        executeUpdate(sql.toString());
     }
 }
